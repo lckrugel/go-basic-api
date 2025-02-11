@@ -13,8 +13,8 @@ type ServerHTTP struct {
 }
 
 func NewHTTPServer(cfg config.AppConfig) *ServerHTTP {
-	router := http.NewServeMux()
-	routes(router)
+	router := NewRouter()
+
 	return &ServerHTTP{
 		server: &http.Server{
 			Addr:    cfg.Host + ":" + cfg.Port,
