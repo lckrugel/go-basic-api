@@ -5,7 +5,7 @@ sql:
     schema: "internal/database/migrations"
     gen:
       go:
-        package: "repository"
-        out: "internal/repository"
+        package: "sqlc"
+        out: "internal/repository/sqlc"
         sql_package: "pgx/v5"
         
