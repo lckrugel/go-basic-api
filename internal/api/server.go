@@ -1,10 +1,11 @@
 package api
 
 import (
+	"context"
 	"log"
 	"net/http"
 
-	"github.com/lckrugel/go-stock/internal/config"
+	"github.com/lckrugel/go-basic-api/internal/config"
 )
 
 type ServerHTTP struct {
@@ -22,7 +23,11 @@ func NewHTTPServer(cfg config.AppConfig) *ServerHTTP {
 	}
 }
 
-func (http *ServerHTTP) Start() error {
-	log.Println("Server starting on", http.server.Addr)
-	return http.server.ListenAndServe()
+func (s *ServerHTTP) Start() error {
+	log.Println("Server starting on", s.server.Addr)
+	return s.server.ListenAndServe()
+}
+
+func (s *ServerHTTP) Close(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }

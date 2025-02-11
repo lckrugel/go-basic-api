@@ -1,4 +1,4 @@
-module github.com/lckrugel/go-stock
+module github.com/lckrugel/go-basic-api
 
 go 1.23.0
 
