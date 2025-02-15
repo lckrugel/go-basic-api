@@ -8,7 +8,7 @@ import (
 )
 
 type DB struct {
-	conn *pgx.Conn
+	*pgx.Conn
 }
 
 func NewDBConnection(cfg config.DatabaseConfig) (*DB, error) {
@@ -21,11 +21,5 @@ func NewDBConnection(cfg config.DatabaseConfig) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{
-		conn: conn,
-	}, nil
-}
-
-func (db *DB) Close(ctx context.Context) error {
-	return db.conn.Close(ctx)
+	return &DB{conn}, nil
 }

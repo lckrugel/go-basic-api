@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -12,13 +12,11 @@ type ServerHTTP struct {
 	server *http.Server
 }
 
-func NewHTTPServer(cfg config.AppConfig) *ServerHTTP {
-	router := NewRouter()
-
+func NewHTTPServer(cfg config.AppConfig, h http.Handler) *ServerHTTP {
 	return &ServerHTTP{
 		server: &http.Server{
 			Addr:    cfg.Host + ":" + cfg.Port,
-			Handler: router,
+			Handler: h,
 		},
 	}
 }
@@ -28,6 +26,6 @@ func (s *ServerHTTP) Start() error {
 	return s.server.ListenAndServe()
 }
 
-func (s *ServerHTTP) Close(ctx context.Context) error {
+func (s *ServerHTTP) Stop(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,33 +10,54 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lckrugel/go-basic-api/internal/application"
+	"github.com/lckrugel/go-basic-api/internal/app/middleware"
+	"github.com/lckrugel/go-basic-api/internal/container"
+	"github.com/lckrugel/go-basic-api/internal/server"
 )
 
 func main() {
-	app, err := application.NewApplication()
+	appContainer, err := container.NewAppContainer()
 	if err != nil {
 		log.Fatalf("Failed to start application: %v", err)
 	}
 
+	controllers := server.Controllers{
+		UserController: appContainer.UserController,
+	}
+
+	// Initialize the application server
+	router := server.NewRouter()
+	router.RegisterRoutes(&controllers)
+	globalMiddlewareChain := middleware.CreateChain(middleware.Logging)
+	server := server.NewHTTPServer(appContainer.Config.AppConfig, globalMiddlewareChain(router.Mux))
+
+	// Set up context to notify for OS interrupt signals.
+	shutdownCtx, shutdownCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer shutdownCancel()
+
+	// Start the server
 	go func() {
-		if err := app.HttpClient.Start(); err != nil && err != http.ErrServerClosed {
+		if err := server.Start(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server encountered an error: %v", err)
 		}
 	}()
 
-	// Set up channel to listen for OS interrupt signals.
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
+	// Wait for the shutdown signal
+	<-shutdownCtx.Done()
+	fmt.Println() // Print a newline to separate the shutdown message from the ^C
+	log.Println("Shutting down...")
 
-	// Create a context with timeout for the shutdown process.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Shutdown the server
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	if err := app.Shutdown(ctx); err != nil {
-		log.Fatalf("Application shutdown failed: %v", err)
+	if err := server.Stop(ctx); err != nil {
+		log.Printf("Shutdown error: %v", err)
 	}
 
-	log.Println("Application stopped gracefully.")
+	// Close the application container
+	if err := appContainer.Close(ctx); err != nil {
+		log.Printf("Failed to close application container: %v", err)
+	}
+
+	log.Printf("Shutdown complete")
 }
